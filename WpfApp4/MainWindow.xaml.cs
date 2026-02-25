@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
@@ -55,37 +56,7 @@ namespace WpfApp4
                 listapezas.FontSize = nuevoTamano;
             }
         }
-        public void CargarLista()
-        {
-            var dir = ConfiguracionRutas.Local.RutaPiezas;
-            var fecha = DateTime.Now.ToString("yyyy_MM_dd");
-            var nombrearchivo = $"Registro Piezas_{fecha}.txt";
-            var path = System.IO.Path.Combine(dir, nombrearchivo);
 
-            lista.Clear();
-            if (File.Exists(path))
-            {
-                try
-                {
-                    string texto = File.ReadAllText(path);
-                    var datosCargados = JsonSerializer.Deserialize<List<Pieza>>(texto);
-
-                    if (datosCargados != null)
-                    {
-                        foreach (var p in datosCargados)
-                        {
-                            lista.Add(p);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Archivo corrupto: {ex.Message}");
-                }
-            }
-            PanelContadorUrgentes();
-            PanelContadorTotalPezas();
-        }
         public void GuardarLista()
         {
             var dir = ConfiguracionRutas.Local.RutaPiezas;
@@ -120,7 +91,25 @@ namespace WpfApp4
             engadirpeza.IsEnabled = false;
             advertencia.Visibility = Visibility.Hidden;
 
-            CargarLista();
+            CargarDesdeSQLite();
+        }
+
+        private void CargarDesdeSQLite()
+        {
+            lista.Clear();
+            try
+            {
+                using var db = new Registro_de_Piezas.ConexionBD();
+                var piezasEnBD = db.RegistroDePiezas.ToList();
+
+                piezasEnBD.ForEach(lista.Add);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error durante la carga: {ex.Message}");
+            }
+            PanelContadorUrgentes();
+            PanelContadorTotalPezas();
         }
 
         private void Listapezas_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -152,9 +141,31 @@ namespace WpfApp4
         {
             if (listapezas.SelectedItem is Pieza p)
             {
-                lista.Remove(p);
-                PanelContadorUrgentes();
-                PanelContadorTotalPezas();
+                var resultado = MessageBox.Show($"¿Estás seguro de que quieres eliminar la pieza '{p.nombre}'?",
+                                                "Confirmar eliminación",
+                                                MessageBoxButton.YesNo,
+                                                MessageBoxImage.Question);
+
+                if (resultado == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        // Si la pieza tiene Id, la borramos de SQLite.
+                        if (p.Id != 0)
+                        {
+                            using var db = new Registro_de_Piezas.ConexionBD();
+                            db.RegistroDePiezas.Remove(p); // El ORM la busca por su Id
+                            db.SaveChanges();
+                        }
+                        lista.Remove(p);
+                        PanelContadorUrgentes();
+                        PanelContadorTotalPezas();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error al eliminar la pieza: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
             }
         }
 
@@ -167,14 +178,14 @@ namespace WpfApp4
         //      return "";
         //  }
 
-        // public string compruebatexto(TextBox r, string textoSiError)
-        // {
-        //     if (!string.IsNullOrEmpty(r.Text))
-        //     {
-        //         return "";
-        //     }
-        //     return textoSiError;
-        // }
+                    // public string compruebatexto(TextBox r, string textoSiError)
+                    // {
+                    //     if (!string.IsNullOrEmpty(r.Text))
+                    //     {
+                    //         return "";
+                    //     }
+                    //     return textoSiError;
+                    // }
 
         public bool comprobamedidas(int largo, int ancho)
         {
@@ -278,7 +289,7 @@ namespace WpfApp4
             }
         }
         private void enternombre(object sender, KeyEventArgs e)
-       {
+        {
             if (e.Key == Key.Enter)
             {
                 texto_color.Focus();
@@ -367,11 +378,11 @@ namespace WpfApp4
                 int index = lista.IndexOf(PiezaOriginal);
                 lista[index] = piezaActualizada;
 
-              //  PiezaOriginal.nombre = borrador.nombre;
-              //  PiezaOriginal.color = borrador.color;
-              //  PiezaOriginal.largo = borrador.largo;
-              //  PiezaOriginal.ancho = borrador.ancho;
-              //  PiezaOriginal.piezaurgente = borrador.piezaurgente;
+                //  PiezaOriginal.nombre = borrador.nombre;
+                //  PiezaOriginal.color = borrador.color;
+                //  PiezaOriginal.largo = borrador.largo;
+                //  PiezaOriginal.ancho = borrador.ancho;
+                //  PiezaOriginal.piezaurgente = borrador.piezaurgente;
 
                 MessageBox.Show("Cambios aplicados correctamente a la lista.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -393,7 +404,7 @@ namespace WpfApp4
 
             this.DataContext = new Pieza();
 
-          //  advertencia.Text = "";
+            //  advertencia.Text = "";
             advertencia.Visibility = Visibility.Hidden;
             texto_nombre.Focus();
             listapezas.SelectedItem = null;
@@ -480,7 +491,7 @@ namespace WpfApp4
 
                 File.Copy(rutaOrigen, rutaDestino, overwrite: true);
 
-                CargarLista();
+                CargarDesdeSQLite();
 
                 MessageBox.Show("Lista importada correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -504,5 +515,44 @@ namespace WpfApp4
         }
 
         private void texto_nombre_TextChanged(object sender, TextChangedEventArgs e) => ValidarFormulario();
+
+        private void botonGuardarEnBaseDeDatosClick(object sender, RoutedEventArgs e)
+        {
+            if (lista == null || !lista.Any())
+            {
+                MessageBox.Show("La lista está vacía. No hay nada que registrar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            try
+            {
+                string semanaSeleccionada = (cbSemana.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Sin Semana";
+                using (var db = new Registro_de_Piezas.ConexionBD())
+                {
+                    foreach (var p in lista)
+                    {
+                        p.Semana = semanaSeleccionada;
+                    }
+                    // Marcamos como guardadas en la memoria del programa
+                    foreach (var p in lista.Where(p => p.Id != 0))
+                    {
+                        db.RegistroDePiezas.Update(p);
+                    }
+                    // Guardamos
+                    db.RegistroDePiezas.AddRange(lista.Where(p => p.Id == 0));
+                    db.SaveChanges();
+
+                    MessageBox.Show($"¡Éxito! Se han guardado las piezas nuevas.", "Guardado Finalizado");
+                }
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var errorReal = dbEx.InnerException?.Message ?? dbEx.Message;
+                MessageBox.Show($"Error real de BD: {errorReal}", "Detalle Técnico");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error general: {ex.Message}");
+            }
+        }
     }
 }

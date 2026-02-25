@@ -126,5 +126,19 @@
                 <SolidColorBrush Color="White" Opacity="0.75"/>
             </TextBox.Background>
         </TextBox>
+        <Button x:Name="guardarEnBaseDeDatos" Grid.Column="3" Content="  Guardar en &#xD;&#xA;Base de datos" Margin="77,0,6,144" VerticalAlignment="Bottom" Height="50" FontSize="16" FontWeight="Bold" Click="botonGuardarEnBaseDeDatosClick" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <ComboBox x:Name="cbSemana" 
+          Grid.Column="1" 
+          Width="150" 
+          Height="35" 
+          VerticalAlignment="Bottom" 
+          HorizontalAlignment="Left" 
+          Margin="6,0,0,219" 
+          FontSize="16">
+            <ComboBoxItem Content="Semana 1" IsSelected="True"/>
+            <ComboBoxItem Content="Semana 2"/>
+            <ComboBoxItem Content="Semana 3"/>
+            <ComboBoxItem Content="Semana 4"/>
+        </ComboBox>
     </Grid>
 </Window>

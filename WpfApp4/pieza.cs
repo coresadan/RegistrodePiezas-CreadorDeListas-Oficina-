@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
 namespace WpfApp4
 {
+    [Table("RegistroDePiezas")]
     public class Pieza : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -41,6 +44,21 @@ namespace WpfApp4
                 }
             }
         }
+
+        private string _semana;
+        public string Semana
+        {
+            get => _semana;
+            set
+            {
+                if (_semana != value)
+                {
+                    _semana = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         private string _largo;
         public string largo
         {
@@ -68,7 +86,9 @@ namespace WpfApp4
             }
         }
 
+        [NotMapped]
         private int _cantidadPiezas;
+        [NotMapped]
         public int cantidadPiezas
         {
             get => _cantidadPiezas;
@@ -90,10 +110,30 @@ namespace WpfApp4
                 if (_piezaurgente != value)
                 {
                     _piezaurgente = value;
+                    Estado = value ? "Urgente" : "Pendiente";
                     OnPropertyChanged();
                 }
             }
         }
+
+        private string _estado = "Pendiente";
+        public string Estado 
+        {
+            get => _estado;
+            set
+            {
+                if (_estado != value)
+                {
+                    _estado = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        [Key]
+        public int Id { get; set; }
+
+
         public Pieza Clonar()
         {
             string json = JsonSerializer.Serialize(this);
