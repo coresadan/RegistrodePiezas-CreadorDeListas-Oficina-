@@ -1,11 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
+using System.Net;
+using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -534,7 +537,8 @@ namespace WpfApp4
 
         private void texto_nombre_TextChanged(object sender, TextChangedEventArgs e) => ValidarFormulario();
 
-        private void botonGuardarEnBaseDeDatosClick(object sender, RoutedEventArgs e)
+
+private void botonGuardarEnBaseDeDatosClick(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -552,25 +556,17 @@ namespace WpfApp4
                     db.RegistroDePiezas.RemoveRange(registrosViejos);
                     db.SaveChanges();
 
-                    var listaConsolidada = lista
-                        .GroupBy(p => new { p.nombre, p.color, p.largo, p.ancho, p.piezaurgente, p.Estado })
-                        .Select(g => new Pieza
-                        {
-                            nombre = g.Key.nombre,
-                            color = g.Key.color,
-                            largo = g.Key.largo,
-                            ancho = g.Key.ancho,
-                            piezaurgente = g.Key.piezaurgente,
-                            Estado = g.Key.Estado,
-                            Cantidad = g.Count(),
-                            Semana = semanaSeleccionada,
-                            Id = 0
-                        }).ToList();
+                    foreach (var p in lista)
+                    {
+                        p.Semana = semanaSeleccionada;
+                        p.Cantidad = 1;
+                        p.Id = 0;    
+                    }
 
-                    db.RegistroDePiezas.AddRange(listaConsolidada);
+                    db.RegistroDePiezas.AddRange(lista);
                     db.SaveChanges();
 
-                    MessageBox.Show("Todo ha sido guardado y agrupado correctamente en la base de datos.", "Éxito");
+                    MessageBox.Show($"Se han guardado {lista.Count} piezas individuales para la {semanaSeleccionada}.", "Éxito");
                 }
             }
             catch (Exception ex)
@@ -594,11 +590,11 @@ namespace WpfApp4
             {
                 using (var db = new Registro_de_Piezas.ConexionBD())
                 {
-                    var registrosBD = db.RegistroDePiezas
-                                        .Where(x => x.Semana == semanaABuscar)
-                                        .ToList();
+                    var piezasBD = db.RegistroDePiezas
+                                     .Where(x => x.Semana == semanaABuscar)
+                                     .ToList();
 
-                    if (registrosBD.Count == 0)
+                    if (piezasBD.Count == 0)
                     {
                         MessageBox.Show($"No hay piezas registradas para la {semanaABuscar}.");
                         lista.Clear();
@@ -606,22 +602,12 @@ namespace WpfApp4
                     }
 
                     lista.Clear();
-
-                    foreach (var reg in registrosBD)
+                    foreach (var p in piezasBD)
                     {
-                        for (int i = 0; i < reg.Cantidad; i++)
-                        {
-                            var piezaIndividual = reg.Clonar();
-
-                            piezaIndividual.Cantidad = 1;
-
-                            piezaIndividual.Id = 0;
-
-                            lista.Add(piezaIndividual);
-                        }
+                        lista.Add(p);
                     }
 
-                    MessageBox.Show($"¡Listo! Hemos desglosado {lista.Count} piezas individuales provenientes de la base de datos.");
+                    MessageBox.Show($"¡Listo! Se han cargado {lista.Count} piezas desde la base de datos.");
                 }
             }
             catch (Exception ex)
