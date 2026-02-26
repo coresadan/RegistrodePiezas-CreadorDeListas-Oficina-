@@ -196,14 +196,14 @@ namespace WpfApp4
         //      return "";
         //  }
 
-                    // public string compruebatexto(TextBox r, string textoSiError)
-                    // {
-                    //     if (!string.IsNullOrEmpty(r.Text))
-                    //     {
-                    //         return "";
-                    //     }
-                    //     return textoSiError;
-                    // }
+        // public string compruebatexto(TextBox r, string textoSiError)
+        // {
+        //     if (!string.IsNullOrEmpty(r.Text))
+        //     {
+        //         return "";
+        //     }
+        //     return textoSiError;
+        // }
 
         public bool comprobamedidas(int largo, int ancho)
         {
@@ -538,54 +538,102 @@ namespace WpfApp4
         {
             try
             {
-                string semanaSeleccionada = (cbSemana.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Sin Semana";
+                string semanaSeleccionada = (cbSemana.SelectedItem as ComboBoxItem)?.Content?.ToString();
+
+                if (string.IsNullOrEmpty(semanaSeleccionada))
+                {
+                    MessageBox.Show("Compañero, selecciona una semana primero.");
+                    return;
+                }
 
                 using (var db = new Registro_de_Piezas.ConexionBD())
                 {
-                    // Agrupamos la lista por todas las características que las hacen "iguales"
-                    var listaConsolidada = lista
-                        .GroupBy(p => new { p.nombre, p.color, p.largo, p.ancho })
-                        .Select(g => new
-                        {
-                            Datos = g.First(),
-                            TotalCantidad = g.Count()
-                        });
-
-                    foreach (var item in listaConsolidada)
-                    {
-                        var p = item.Datos;
-                        p.Semana = semanaSeleccionada;
-
-                        var existente = db.RegistroDePiezas.FirstOrDefault(x =>
-                            x.nombre == p.nombre &&
-                            x.color == p.color &&
-                            x.largo == p.largo &&
-                            x.ancho == p.ancho &&
-                            x.Semana == p.Semana);
-
-                        if (existente != null)
-                        {
-                            existente.Cantidad += item.TotalCantidad;
-                            db.RegistroDePiezas.Update(existente);
-                        }
-                        else
-                        {
-                            p.Cantidad = item.TotalCantidad;
-                            p.Id = 0;
-                            db.RegistroDePiezas.Add(p);
-                        }
-                    }
+                    // 1. Limpiamos lo que había antes para esa semana
+                    var registrosViejos = db.RegistroDePiezas.Where(x => x.Semana == semanaSeleccionada);
+                    db.RegistroDePiezas.RemoveRange(registrosViejos);
                     db.SaveChanges();
-                    lista.Clear();
 
-                    MessageBox.Show("¡Inventario consolidado con éxito!", "Hecho");
+                    // 2. Agrupamos y creamos las piezas nuevas
+                    var listaConsolidada = lista
+                        .GroupBy(p => new { p.nombre, p.color, p.largo, p.ancho, p.piezaurgente, p.Estado })
+                        .Select(g => new Pieza
+                        {
+                            nombre = g.Key.nombre,
+                            color = g.Key.color,
+                            largo = g.Key.largo,
+                            ancho = g.Key.ancho,
+                            piezaurgente = g.Key.piezaurgente,
+                            Estado = g.Key.Estado,
+                            Cantidad = g.Count(),
+                            Semana = semanaSeleccionada,
+                            Id = 0
+                        }).ToList();
 
+                    // 3. Insertamos la lista ya agrupada y con su semana puesta
+                    db.RegistroDePiezas.AddRange(listaConsolidada);
+                    db.SaveChanges();
+
+                    MessageBox.Show("¡Ahora sí! Todo guardado y agrupado correctamente.", "Éxito");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}");
+                var mensaje = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                MessageBox.Show($"Error al guardar: {mensaje}");
             }
+        }
+
+        private void ButtonCargarSemanaClick(object sender, RoutedEventArgs e)
+        {
+            string semanaABuscar = (cbSemana.SelectedItem as ComboBoxItem)?.Content?.ToString();
+
+            if (string.IsNullOrEmpty(semanaABuscar))
+            {
+                MessageBox.Show("Compañero, selecciona primero una semana en el desplegable.", "Aviso");
+                return;
+            }
+
+            try
+            {
+                using (var db = new Registro_de_Piezas.ConexionBD())
+                {
+                    var registrosBD = db.RegistroDePiezas
+                                        .Where(x => x.Semana == semanaABuscar)
+                                        .ToList();
+
+                    if (registrosBD.Count == 0)
+                    {
+                        MessageBox.Show($"No hay piezas registradas para la {semanaABuscar}.");
+                        lista.Clear();
+                        return;
+                    }
+
+                    lista.Clear();
+
+                    foreach (var reg in registrosBD)
+                    {
+                        for (int i = 0; i < reg.Cantidad; i++)
+                        {
+                            var piezaIndividual = reg.Clonar();
+
+                            piezaIndividual.Cantidad = 1;
+
+                            piezaIndividual.Id = 0;
+
+                            lista.Add(piezaIndividual);
+                        }
+                    }
+
+                    MessageBox.Show($"¡Listo! Hemos desglosado {lista.Count} piezas individuales.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al cargar: {ex.Message}");
+            }
+
+            PanelContadorUrgentes();
+            PanelContadorTotalPezas();
         }
     }
 }

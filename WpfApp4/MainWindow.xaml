@@ -134,11 +134,22 @@
           VerticalAlignment="Bottom" 
           HorizontalAlignment="Left" 
           Margin="6,0,0,219" 
-          FontSize="16">
+          FontSize="16" FontWeight="Bold" Foreground="#FF886826" BorderBrush="#FFF9DDA3">
+            <ComboBox.Background>
+                <LinearGradientBrush EndPoint="0,1">
+                    <GradientStop Color="#FFF0F0F0"/>
+                    <GradientStop Color="White" Offset="1"/>
+                </LinearGradientBrush>
+            </ComboBox.Background>
             <ComboBoxItem Content="Semana 1" IsSelected="True"/>
             <ComboBoxItem Content="Semana 2"/>
             <ComboBoxItem Content="Semana 3"/>
             <ComboBoxItem Content="Semana 4"/>
         </ComboBox>
+        <Button x:Name="botonCargarSemana" Grid.Column="1" Content="Cargar" Margin="161,0,85,219" Click="ButtonCargarSemanaClick" FontSize="14" Height="34" VerticalAlignment="Bottom">
+            <Button.Background>
+                <SolidColorBrush Color="#FFDDDDDD" Opacity="0.75"/>
+            </Button.Background>
+        </Button>
     </Grid>
 </Window>
