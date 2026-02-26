@@ -19,6 +19,7 @@ namespace WpfApp4
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
         private string _nombre;
+        [Column("Nombre")]
         public string nombre
         {
             get => _nombre;
@@ -32,6 +33,7 @@ namespace WpfApp4
             }
         }
         private string _color;
+        [Column("Color")]
         public string color
         {
             get => _color;
@@ -46,6 +48,7 @@ namespace WpfApp4
         }
 
         private string _semana;
+        [Column("Semana")]
         public string Semana
         {
             get => _semana;
@@ -60,6 +63,7 @@ namespace WpfApp4
         }
 
         private string _largo;
+        [Column("Largo")]
         public string largo
         {
             get => _largo;
@@ -73,6 +77,7 @@ namespace WpfApp4
             }
         }
         private string _ancho;
+        [Column("Ancho")]
         public string ancho
         {
             get => _ancho;
@@ -85,6 +90,8 @@ namespace WpfApp4
                 }
             }
         }
+        // Suma de Piezas con las mismas características en la base de datos
+        public int Cantidad { get; set; }
 
         [NotMapped]
         private int _cantidadPiezas;
@@ -102,6 +109,7 @@ namespace WpfApp4
             }
         }
         private bool _piezaurgente;
+        [Column("Piezaurgente")]
         public bool piezaurgente
         {
             get => _piezaurgente;
@@ -131,6 +139,7 @@ namespace WpfApp4
         }
 
         [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
 

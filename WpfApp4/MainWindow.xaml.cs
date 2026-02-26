@@ -90,24 +90,42 @@ namespace WpfApp4
             texto_nombre.Focus();
             engadirpeza.IsEnabled = false;
             advertencia.Visibility = Visibility.Hidden;
-
-            CargarDesdeSQLite();
         }
 
         private void CargarDesdeSQLite()
         {
+            string semanaABuscar = (cbSemana.SelectedItem as ComboBoxItem)?.Content?.ToString();
+
+            if (string.IsNullOrEmpty(semanaABuscar))
+            {
+                MessageBox.Show("Por favor, selecciona una semana primero.");
+                return;
+            }
+
             lista.Clear();
             try
             {
                 using var db = new Registro_de_Piezas.ConexionBD();
-                var piezasEnBD = db.RegistroDePiezas.ToList();
 
-                piezasEnBD.ForEach(lista.Add);
+                var piezasEnBD = db.RegistroDePiezas
+                                   .Where(x => x.Semana == semanaABuscar)
+                                   .ToList();
+
+                foreach (var registro in piezasEnBD)
+                {
+                    for (int i = 0; i < registro.Cantidad; i++)
+                    {
+                        var piezaIndividual = registro.Clonar();
+                        piezaIndividual.Cantidad = 1;
+                        lista.Add(piezaIndividual);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error durante la carga: {ex.Message}");
+                MessageBox.Show($"Error al desglosar: {ex.Message}");
             }
+
             PanelContadorUrgentes();
             PanelContadorTotalPezas();
         }
@@ -518,40 +536,55 @@ namespace WpfApp4
 
         private void botonGuardarEnBaseDeDatosClick(object sender, RoutedEventArgs e)
         {
-            if (lista == null || !lista.Any())
-            {
-                MessageBox.Show("La lista está vacía. No hay nada que registrar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
             try
             {
                 string semanaSeleccionada = (cbSemana.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Sin Semana";
+
                 using (var db = new Registro_de_Piezas.ConexionBD())
                 {
-                    foreach (var p in lista)
-                    {
-                        p.Semana = semanaSeleccionada;
-                    }
-                    // Marcamos como guardadas en la memoria del programa
-                    foreach (var p in lista.Where(p => p.Id != 0))
-                    {
-                        db.RegistroDePiezas.Update(p);
-                    }
-                    // Guardamos
-                    db.RegistroDePiezas.AddRange(lista.Where(p => p.Id == 0));
-                    db.SaveChanges();
+                    // Agrupamos la lista por todas las características que las hacen "iguales"
+                    var listaConsolidada = lista
+                        .GroupBy(p => new { p.nombre, p.color, p.largo, p.ancho })
+                        .Select(g => new
+                        {
+                            Datos = g.First(),
+                            TotalCantidad = g.Count()
+                        });
 
-                    MessageBox.Show($"¡Éxito! Se han guardado las piezas nuevas.", "Guardado Finalizado");
+                    foreach (var item in listaConsolidada)
+                    {
+                        var p = item.Datos;
+                        p.Semana = semanaSeleccionada;
+
+                        var existente = db.RegistroDePiezas.FirstOrDefault(x =>
+                            x.nombre == p.nombre &&
+                            x.color == p.color &&
+                            x.largo == p.largo &&
+                            x.ancho == p.ancho &&
+                            x.Semana == p.Semana);
+
+                        if (existente != null)
+                        {
+                            existente.Cantidad += item.TotalCantidad;
+                            db.RegistroDePiezas.Update(existente);
+                        }
+                        else
+                        {
+                            p.Cantidad = item.TotalCantidad;
+                            p.Id = 0;
+                            db.RegistroDePiezas.Add(p);
+                        }
+                    }
+                    db.SaveChanges();
+                    lista.Clear();
+
+                    MessageBox.Show("¡Inventario consolidado con éxito!", "Hecho");
+
                 }
-            }
-            catch (DbUpdateException dbEx)
-            {
-                var errorReal = dbEx.InnerException?.Message ?? dbEx.Message;
-                MessageBox.Show($"Error real de BD: {errorReal}", "Detalle Técnico");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error general: {ex.Message}");
+                MessageBox.Show($"Error: {ex.Message}");
             }
         }
     }
