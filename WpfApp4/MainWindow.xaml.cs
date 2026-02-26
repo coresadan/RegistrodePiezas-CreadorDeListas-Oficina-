@@ -548,12 +548,10 @@ namespace WpfApp4
 
                 using (var db = new Registro_de_Piezas.ConexionBD())
                 {
-                    // 1. Limpiamos lo que había antes para esa semana
                     var registrosViejos = db.RegistroDePiezas.Where(x => x.Semana == semanaSeleccionada);
                     db.RegistroDePiezas.RemoveRange(registrosViejos);
                     db.SaveChanges();
 
-                    // 2. Agrupamos y creamos las piezas nuevas
                     var listaConsolidada = lista
                         .GroupBy(p => new { p.nombre, p.color, p.largo, p.ancho, p.piezaurgente, p.Estado })
                         .Select(g => new Pieza
@@ -569,11 +567,10 @@ namespace WpfApp4
                             Id = 0
                         }).ToList();
 
-                    // 3. Insertamos la lista ya agrupada y con su semana puesta
                     db.RegistroDePiezas.AddRange(listaConsolidada);
                     db.SaveChanges();
 
-                    MessageBox.Show("¡Ahora sí! Todo guardado y agrupado correctamente.", "Éxito");
+                    MessageBox.Show("Todo ha sido guardado y agrupado correctamente en la base de datos.", "Éxito");
                 }
             }
             catch (Exception ex)
@@ -589,7 +586,7 @@ namespace WpfApp4
 
             if (string.IsNullOrEmpty(semanaABuscar))
             {
-                MessageBox.Show("Compañero, selecciona primero una semana en el desplegable.", "Aviso");
+                MessageBox.Show("Selecciona primero una semana en el desplegable.", "Aviso");
                 return;
             }
 
@@ -624,7 +621,7 @@ namespace WpfApp4
                         }
                     }
 
-                    MessageBox.Show($"¡Listo! Hemos desglosado {lista.Count} piezas individuales.");
+                    MessageBox.Show($"¡Listo! Hemos desglosado {lista.Count} piezas individuales provenientes de la base de datos.");
                 }
             }
             catch (Exception ex)
@@ -634,6 +631,22 @@ namespace WpfApp4
 
             PanelContadorUrgentes();
             PanelContadorTotalPezas();
+        }
+
+        private void ButtonLimpiarSemanaClick(object sender, RoutedEventArgs e)
+        {
+            var resultado = MessageBox.Show("¿Seguro que quieres vaciar la lista de pantalla? No borrará nada de la base de datos.",
+                                    "Limpiar Pantalla",
+                                    MessageBoxButton.YesNo,
+                                    MessageBoxImage.Question);
+
+            if (resultado == MessageBoxResult.Yes)
+            {
+                lista.Clear();
+
+                PanelContadorUrgentes();
+                PanelContadorTotalPezas();
+            }
         }
     }
 }
