@@ -110,8 +110,8 @@
         <CheckBox Content="Urgente" Margin="71,0,0,71" IsChecked="{Binding piezaurgente, UpdateSourceTrigger=PropertyChanged}" Name="urgentecheck" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="100" Foreground="#FFFFF3A0" FontWeight="Bold" FontSize="16"/>
         <Button Content="Generar Respaldo Local" Margin="11,0,11,57" Name="itembotonguardar" Click="botonguardar" Grid.Column="2" FontWeight="Bold" FontSize="16" Height="37" VerticalAlignment="Bottom" Foreground="Black"/>
         <Button Content="Editar" Margin="0,0,14,57" Name="botoneditar" Click="BotonEditarClick" Height="37" VerticalAlignment="Bottom" Foreground="Black" FontSize="16" FontWeight="Bold" HorizontalAlignment="Right" Width="196"/>
-        <Button Content="Guardar cambios" Margin="12,590,10,0" Name="botonguardarcambios" Click="BotonGuardarCambiosClick" Grid.Column="2" FontSize="16" FontWeight="Bold" Foreground="Black" Height="37" VerticalAlignment="Top"/>
-        <Button Content="Cancelar" Margin="45,591,45,0" Name="botoncancelar" Click="BotonCancelarClick" Grid.Column="1" FontSize="16" FontWeight="Bold" Height="37" VerticalAlignment="Top"/>
+        <Button Content="Guardar cambios" Margin="12,0,10,57" Name="botonguardarcambios" Click="BotonGuardarCambiosClick" Grid.Column="2" FontSize="16" FontWeight="Bold" Foreground="Black" Height="37" VerticalAlignment="Bottom"/>
+        <Button Content="Cancelar" Margin="45,0,45,56" Name="botoncancelar" Click="BotonCancelarClick" Grid.Column="1" FontSize="16" FontWeight="Bold" Height="37" VerticalAlignment="Bottom"/>
         <Button Content="Registrar Piezas Urgentes" Margin="43,0,6,57" Name="BotonNotificarPiezasUrgentes" Click="BotonNotificarPiezasUrgentesClick" Grid.Column="3" Height="37" VerticalAlignment="Bottom" FontSize="16" FontWeight="Bold"/>
 
         <TextBlock Margin="51,0,12,239" x:Name="ContadorUrgentes" Text="" Background="{DynamicResource {x:Static SystemColors.AccentColorBrushKey}}" FontFamily="Arial Black" Grid.Column="2" Opacity="0.9" FontSize="16" Height="32" VerticalAlignment="Bottom"/>
